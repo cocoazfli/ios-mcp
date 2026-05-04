@@ -195,31 +195,33 @@ static NSDictionary *MCPRandomizedTapPointForElement(NSDictionary *element) {
     double y = 0.0;
     double width = 0.0;
     double height = 0.0;
+
     if (!MCPRectValuesFromDictionary(rect, &x, &y, &width, &height)) {
         NSDictionary *tap = [element[@"tap"] isKindOfClass:[NSDictionary class]] ? element[@"tap"] : nil;
         return tap;
     }
 
-    // Stay away from edges, but keep enough room for very small controls.
-    double marginX = width > 4.0 ? MIN(8.0, width * 0.2) : 0.0;
-    double marginY = height > 4.0 ? MIN(8.0, height * 0.2) : 0.0;
-    double minX = x + marginX;
-    double maxX = x + width - marginX;
-    double minY = y + marginY;
-    double maxY = y + height - marginY;
-    if (maxX <= minX) {
-        minX = x;
-        maxX = x + width;
-    }
-    if (maxY <= minY) {
-        minY = y;
-        maxY = y + height;
-    }
+    // 控制随机点击范围：只在 rect 中间区域随机
+    // 0.5 表示中间 50% 区域
+    // 例如 rect: x=0 y=0 width=80 height=40
+    // 最终随机区域: x=20 y=10 width=40 height=20
+    double centerRatio = 0.5;
+
+    double tapWidth = width * centerRatio;
+    double tapHeight = height * centerRatio;
+
+    double minX = x + (width - tapWidth) / 2.0;
+    double maxX = minX + tapWidth;
+
+    double minY = y + (height - tapHeight) / 2.0;
+    double maxY = minY + tapHeight;
 
     double tapX = minX + ((maxX - minX) * MCPRandomUnit());
     double tapY = minY + ((maxY - minY) * MCPRandomUnit());
+
     tapX = MIN(MAX(tapX, x), x + width);
     tapY = MIN(MAX(tapY, y), y + height);
+
     return @{
         @"x": @(MCPRoundedScreenPoint(tapX)),
         @"y": @(MCPRoundedScreenPoint(tapY))
